@@ -147,7 +147,10 @@ async function startSpeech(session: string) {
   child.once("spawn", () => {
     if (speech !== child) child.kill();
   });
-  child.stderr?.on("data", () => {});
+  let nativeError = "";
+  child.stderr?.on("data", (chunk) => {
+    nativeError = (nativeError + chunk.toString()).slice(-4000);
+  });
   await new Promise<void>((resolve, reject) => {
     let ready = false;
     const timer = setTimeout(() => {
@@ -173,11 +176,15 @@ async function startSpeech(session: string) {
         speech = undefined;
         if (ready)
           sendSpeech({
-            error: `Voice recognition stopped (${code}). Restart voice mode.`,
+            error: `Voice recognition stopped (${code}). Restart voice mode. ${nativeError.trim()}`,
           });
       }
       if (!ready)
-        reject(new Error("The speech process could not start. Try again."));
+        reject(
+          new Error(
+            `The speech process could not start. Try again. ${nativeError.trim()}`,
+          ),
+        );
     });
     child.postMessage({ type: "init", directory: model.directory });
   }).catch((error) => {

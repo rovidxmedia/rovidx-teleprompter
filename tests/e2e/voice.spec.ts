@@ -1,5 +1,12 @@
 import { _electron as electron, expect, test } from "@playwright/test";
-import { access, cp, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import {
+  access,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
@@ -41,8 +48,25 @@ test("offline voice following through microphone capture and utility process", a
     ],
     env: { ...process.env },
   });
+  let failure = false;
   try {
     const page = await app.firstWindow();
+    await app.evaluate(({ app, BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows()[0];
+      window.setSize(1200, 900);
+      window.show();
+      app.focus({ steal: true });
+      window.focus();
+    });
+    page.on("pageerror", (error) =>
+      console.error("Renderer error:", error.message),
+    );
+    await page.evaluate(() => {
+      (window as any).speechEvents = [];
+      window.desktop.onSpeech((event) =>
+        (window as any).speechEvents.push(event),
+      );
+    });
     await page
       .getByRole("button", { name: "Paste text", exact: true })
       .first()
@@ -117,6 +141,36 @@ test("offline voice following through microphone capture and utility process", a
     await page.screenshot({
       path: `test-results/voice-${executablePath ? "packaged" : "development"}.png`,
     });
+  } catch (error) {
+    failure = true;
+    const page = app.windows()[0];
+    if (page) {
+      await mkdir("test-results", { recursive: true });
+      const diagnostics = await page
+        .evaluate(() => ({
+          body: document.body.innerText,
+          visibility: document.visibilityState,
+          speechEvents: (window as any).speechEvents,
+          tracks: ((window as any).capturedTracks ?? []).map(
+            (track: MediaStreamTrack) => ({
+              state: track.readyState,
+              enabled: track.enabled,
+              muted: track.muted,
+              settings: track.getSettings(),
+            }),
+          ),
+        }))
+        .catch(() => ({ error: "Renderer unavailable" }));
+      console.error("Speech diagnostics:", JSON.stringify(diagnostics));
+      await writeFile(
+        "test-results/speech-diagnostics.json",
+        JSON.stringify(diagnostics, null, 2),
+      );
+      await page
+        .screenshot({ path: "test-results/speech-failure.png" })
+        .catch(() => {});
+    }
+    throw error;
   } finally {
     await app.close();
   }
