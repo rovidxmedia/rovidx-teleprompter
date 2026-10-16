@@ -1,7 +1,7 @@
 {
   "name": "rovidx-teleprompter",
   "productName": "Rovidx Teleprompter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "license": "MIT",
   "homepage": "https://rovidx.com",
@@ -61,6 +61,12 @@
       "dist/**/*",
       "dist-electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "LICENSE",
+        "to": "LICENSE-Rovidx.txt"
+      }
     ],
     "asarUnpack": [
       "node_modules/sherpa-onnx*/**/*"

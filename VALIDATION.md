@@ -34,3 +34,9 @@ The portable smoke test uses a browser debugging connection because the NSIS lau
 ## Limits
 
 Installer installation/uninstallation and a physical monitor unplug/replug were not performed. Live spoken recognition accuracy depends on the microphone, voice, background noise, and wording; automated voice checks use a known reference recording. Code signing and automatic updates are not configured.
+
+## Public cross-platform builds
+
+The [GitHub Actions workflow](https://github.com/rovidxmedia/rovidx-teleprompter/actions/workflows/build.yml) runs the unit suite, native offline decoding, and packaged voice-following smoke test on Windows x64, macOS ARM64 and x64, and Linux ARM64 and x64. Branch checks package application directories; version tags also produce installers and archives. Release publication requires every native job to pass.
+
+Microphone processing uses Chromium's silent audio sink so the capture worklet does not depend on a speaker/output device. Hosted-runner speech tests use a public audio fixture rather than a physical microphone. Windows and Linux use Chromium's simulated input device; Mac tests provide a WAV-backed MediaStream because the hosted virtual microphone can return silence. Both paths exercise the application's worklet, IPC, native recognizer, matching, scrolling, and pause cleanup. See the linked workflow for current results; the Windows hardware checks above describe the initial local validation.

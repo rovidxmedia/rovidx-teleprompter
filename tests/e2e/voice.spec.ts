@@ -63,11 +63,34 @@ test("offline voice following through microphone capture and utility process", a
     await page.evaluate(() => {
       (window as any).speechEvents = [];
       (window as any).captureContexts = [];
+      (window as any).captureStats = { chunks: 0, peak: 0 };
       const OriginalContext = window.AudioContext;
       window.AudioContext = class extends OriginalContext {
         constructor(options?: AudioContextOptions) {
           super(options);
           (window as any).captureContexts.push(this);
+        }
+      };
+      const OriginalWorklet = window.AudioWorkletNode;
+      window.AudioWorkletNode = class extends OriginalWorklet {
+        constructor(
+          context: BaseAudioContext,
+          name: string,
+          options?: AudioWorkletNodeOptions,
+        ) {
+          super(context, name, options);
+          this.port.addEventListener(
+            "message",
+            ({ data }: MessageEvent<Float32Array>) => {
+              (window as any).captureStats.chunks++;
+              for (const sample of data)
+                (window as any).captureStats.peak = Math.max(
+                  (window as any).captureStats.peak,
+                  Math.abs(sample),
+                );
+            },
+          );
+          this.port.start();
         }
       };
       window.desktop.onSpeech((event) =>
@@ -105,6 +128,53 @@ test("offline voice following through microphone capture and utility process", a
         return stream;
       };
     });
+    if (process.platform === "darwin") {
+      // Hosted Macs expose a live simulated microphone that can deliver only silence.
+      // Supply a real MediaStream from the WAV instead; retain the application's full
+      // MediaStream -> AudioWorklet -> IPC -> native recognizer -> scrolling pipeline.
+      const wav = (await readFile(path.join(fixture, "sample.wav"))).toString(
+        "base64",
+      );
+      await page.evaluate(async (encoded) => {
+        const bytes = Uint8Array.from(atob(encoded), (character) =>
+          character.charCodeAt(0),
+        );
+        const decoder = new OfflineAudioContext(1, 1, 16000);
+        const buffer = await decoder.decodeAudioData(bytes.buffer);
+        navigator.mediaDevices.getUserMedia = async () => {
+          const options = {
+            sampleRate: 48000,
+            sinkId: { type: "none" as const },
+          };
+          const context = new AudioContext(options);
+          const source = context.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+          const destination = context.createMediaStreamDestination();
+          source.connect(destination);
+          const mute = context.createGain();
+          mute.gain.value = 0;
+          source.connect(mute);
+          mute.connect(context.destination);
+          source.start();
+          await context.resume();
+          const stream = destination.stream;
+          for (const track of stream.getTracks()) {
+            const stop = track.stop.bind(track);
+            let stopped = false;
+            track.stop = () => {
+              if (stopped) return;
+              stopped = true;
+              stop();
+              source.stop();
+              void context.close();
+            };
+            (window as any).capturedTracks.push(track);
+          }
+          return stream;
+        };
+      }, wav);
+    }
     await page.getByRole("button", { name: "Start scrolling" }).click();
     await expect(
       page.getByRole("button", { name: "Pause scrolling" }),
@@ -156,6 +226,7 @@ test("offline voice following through microphone capture and utility process", a
         .evaluate(() => ({
           body: document.body.innerText,
           visibility: document.visibilityState,
+          captureStats: (window as any).captureStats,
           contexts: ((window as any).captureContexts ?? []).map(
             (context: AudioContext) => ({
               state: context.state,
