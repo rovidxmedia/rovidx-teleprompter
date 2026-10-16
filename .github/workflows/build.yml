@@ -9,7 +9,7 @@ permissions:
   contents: read
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 jobs:
   build:
     name: ${{ matrix.platform }} ${{ matrix.arch }}
@@ -19,22 +19,27 @@ jobs:
       matrix:
         include:
           - platform: Windows
+            target: win
             os: windows-2022
             arch: x64
             command: npx electron-builder --win nsis portable --x64 --publish never
           - platform: macOS
+            target: mac
             os: macos-15
             arch: arm64
             command: npx electron-builder --mac dmg zip --arm64 --publish never
           - platform: macOS
+            target: mac
             os: macos-15-intel
             arch: x64
             command: npx electron-builder --mac dmg zip --x64 --publish never
           - platform: Linux
+            target: linux
             os: ubuntu-24.04
             arch: x64
             command: npx electron-builder --linux AppImage deb --x64 --publish never
           - platform: Linux
+            target: linux
             os: ubuntu-24.04-arm
             arch: arm64
             command: npx electron-builder --linux AppImage deb --arm64 --publish never
@@ -58,7 +63,11 @@ jobs:
       - name: Prepare and verify offline speech
         run: npm run test:speech
       - name: Package native application
+        if: startsWith(github.ref, 'refs/tags/')
         run: ${{ matrix.command }}
+      - name: Package application for native smoke test
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: npx electron-builder --${{ matrix.target }} --${{ matrix.arch }} --dir --publish never
       - name: Test packaged speech on Windows and macOS
         if: runner.os != 'Linux'
         run: npm run test:packaged
@@ -66,6 +75,7 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run test:packaged
       - name: Upload release artifacts
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-${{ matrix.platform }}-${{ matrix.arch }}

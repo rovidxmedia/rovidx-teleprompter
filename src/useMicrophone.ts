@@ -56,7 +56,13 @@ export function useMicrophone(
           return;
         }
         if (!started.ok) throw new Error(started.error);
-        context = new AudioContext();
+        // Analyze input without depending on an available speaker/output device.
+        // Chromium's silent sink still advances the audio graph and worklet clock.
+        const captureOptions = {
+          sampleRate: 48000,
+          sinkId: { type: "none" as const },
+        };
+        context = new AudioContext(captureOptions);
         await context.audioWorklet.addModule(
           new URL("capture-worklet.js", document.baseURI).href,
         );

@@ -48,7 +48,6 @@ test("offline voice following through microphone capture and utility process", a
     ],
     env: { ...process.env },
   });
-  let failure = false;
   try {
     const page = await app.firstWindow();
     await app.evaluate(({ app, BrowserWindow }) => {
@@ -63,6 +62,14 @@ test("offline voice following through microphone capture and utility process", a
     );
     await page.evaluate(() => {
       (window as any).speechEvents = [];
+      (window as any).captureContexts = [];
+      const OriginalContext = window.AudioContext;
+      window.AudioContext = class extends OriginalContext {
+        constructor(options?: AudioContextOptions) {
+          super(options);
+          (window as any).captureContexts.push(this);
+        }
+      };
       window.desktop.onSpeech((event) =>
         (window as any).speechEvents.push(event),
       );
@@ -142,7 +149,6 @@ test("offline voice following through microphone capture and utility process", a
       path: `test-results/voice-${executablePath ? "packaged" : "development"}.png`,
     });
   } catch (error) {
-    failure = true;
     const page = app.windows()[0];
     if (page) {
       await mkdir("test-results", { recursive: true });
@@ -150,6 +156,14 @@ test("offline voice following through microphone capture and utility process", a
         .evaluate(() => ({
           body: document.body.innerText,
           visibility: document.visibilityState,
+          contexts: ((window as any).captureContexts ?? []).map(
+            (context: AudioContext) => ({
+              state: context.state,
+              time: context.currentTime,
+              sampleRate: context.sampleRate,
+              sink: (context as any).sinkId,
+            }),
+          ),
           speechEvents: (window as any).speechEvents,
           tracks: ((window as any).capturedTracks ?? []).map(
             (track: MediaStreamTrack) => ({
