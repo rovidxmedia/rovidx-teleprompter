@@ -1,0 +1,19 @@
+Welcome to your studio.
+
+Take a moment to settle in. Move the lights until they feel right, find the lens, and take a breath.
+
+A good recording starts with a clear thought. You don't need to rush it.
+
+The panels on either side are your studio lights. Right-click either one to choose a color or adjust the brightness. Link the lights if you'd like them to match.
+
+The center is your space to read. Drag the dividers to make it wider or narrower. Right-click the text to change its size, spacing, or reading position.
+
+If your camera is in the middle of the screen, choose Center camera. If it's above the monitor, choose Above monitor. You can also set the reading line exactly where you want it.
+
+Try manual scrolling with your mouse wheel or the arrow keys. For a steady pace, choose Auto-scroll and press Space to start.
+
+Voice following moves with your words. Download the English model once, choose your microphone, and start reading. The audio stays on your computer.
+
+Pause for a moment. Find your next thought. When you're ready, keep going.
+
+Your words. Your pace. Welcome to Rovidx Teleprompter.

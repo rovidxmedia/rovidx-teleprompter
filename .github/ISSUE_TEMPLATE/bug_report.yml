@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible problem with Rovidx Teleprompter.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system and processor
+      placeholder: Windows 11 x64, macOS Apple Silicon, Ubuntu 24.04 ARM64…
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include expected and actual behavior. Use a short, non-sensitive sample script if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional details
+      description: Screenshots, microphone settings, and display resolution may help. Remove private scripts and personal information before posting.

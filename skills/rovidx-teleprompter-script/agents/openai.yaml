@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rovidx Teleprompter Script"
+  short_description: "Format readable scripts for Rovidx Teleprompter"
+  default_prompt: "Use $rovidx-teleprompter-script to prepare my script as a readable UTF-8 text file without changing my wording."

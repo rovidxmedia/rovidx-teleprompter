@@ -1,0 +1,117 @@
+{
+  "name": "rovidx-teleprompter",
+  "productName": "Rovidx Teleprompter",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://rovidx.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rovidxmedia/rovidx-teleprompter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rovidxmedia/rovidx-teleprompter/issues"
+  },
+  "description": "An ultrawide teleprompter with studio lights and offline voice following.",
+  "author": "Rovidx",
+  "main": "dist-electron/electron/main.js",
+  "scripts": {
+    "dev": "npm run build:electron && concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "tsc --noEmit && npm run build:electron && vite build",
+    "start": "electron .",
+    "test": "vitest run",
+    "test:e2e": "npm run build && playwright test",
+    "test:speech": "npm run build:electron && node scripts/prepare-voice-test.cjs",
+    "package": "npm run build && electron-builder --win nsis portable --x64",
+    "package:mac": "npm run build && electron-builder --mac dmg zip --publish never",
+    "package:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
+    "test:packaged": "node scripts/test-packaged.cjs",
+    "package:dir": "npm run build && electron-builder --win --dir --x64"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sherpa-onnx-node": "1.13.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "44.8.0",
+    "electron-builder": "26.15.3",
+    "prettier": "^3.9.10",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0",
+    "vitest": "^3.1.0",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.rovidx.teleprompter",
+    "productName": "Rovidx Teleprompter",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/sherpa-onnx*/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "Rovidx-Teleprompter-Windows-${arch}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Rovidx-Teleprompter-Windows-${arch}-Portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "public/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "notarize": false,
+      "artifactName": "Rovidx-Teleprompter-macOS-${arch}.${ext}",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Rovidx Teleprompter uses your microphone to follow your script locally while you read."
+      }
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "icon": "public/icon.png",
+      "maintainer": "Rovidx <github@rovidx.com>",
+      "artifactName": "Rovidx-Teleprompter-Linux-${arch}.${ext}",
+      "desktop": {
+        "entry": {
+          "Name": "Rovidx Teleprompter",
+          "Comment": "Read your script with studio lights and offline voice following"
+        }
+      }
+    }
+  }
+}
